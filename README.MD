@@ -1,145 +1,55 @@
-# 🤖 RAG Q&A Assistant
+# 🤖 Premium Multi-Source Agentic RAG
 
-A smart PDF question-answering app using Streamlit, LangChain, and Google Gemini AI.
+A state-of-the-art, high-performance RAG system built with **FastAPI**, **Next.js**, **Qdrant**, and **Google Gemini 2.5 Flash**. This system is designed for enterprise-grade document intelligence, featuring multi-source orchestration and hybrid retrieval.
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![Streamlit](https://img.shields.io/badge/streamlit-latest-red.svg)
+## 🧠 Architectural Design (Agentic Flow)
 
-## ✨ Features
+The system follows a modular architecture inspired by advanced agentic patterns. Unlike traditional RAG, this pipeline dynamically decides which "Knowledge Collections" to consult based on the user's intent.
 
-- 📄 Upload PDF documents
-- 💬 Ask questions in natural language
-- 🤖 AI-powered answers using Google Gemini
-- 🎨 Beautiful, modern UI
-- 💾 Conversation history
+### 1. Ingestion Engine (The Knowledge Base)
+The system supports four distinct knowledge streams, each with optimized ingestion parameters:
+- **Research Papers**: Deep PDF processing using `PyPDFLoader` and `RecursiveCharacterTextSplitter` with 1000-character chunks.
+- **Knowledge Base**: Business/Internal documentation processed from Markdown files.
+- **Code Docs**: Technical documentation and repositories, optimized for code-snippet retention.
+- **FAQ Data**: Structured Question-Answer pairs for high-precision retrieval.
 
-## 🚀 Quick Start
+**Vector Engine**: Powered by **Qdrant Cloud**, using the `all-MiniLM-L6-v2` embedding model (384-dimensional vectors) with Cosine similarity.
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/yourusername/rag-qa-assistant.git
-cd rag-qa-assistant
-```
+### 2. Intelligent Agentic Planner
+Instead of searching a single flat database, the **Planner** acts as a traffic controller.
+- **Instant Keyword Routing**: Using a high-speed keyword dictionary derived from the notebook patterns, the planner identifies which of the 4 collections are most relevant to the query.
+- **Parallel Execution**: Once collections are selected, the system triggers simultaneous searches across all target databases, minimizing wait times.
 
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+### 3. High-Performance Retrieval Pipeline
+- **Unified Embedding**: To save API costs and reduce latency, the system generates a single query embedding and reuses it across all selected collection searches.
+- **Hybrid Retrieval**: Combines Dense Vector search (Semantic) with **BM25 Okapi** reranking (Keyword-based). This ensures that specific technical terms (like "Layer Normalization") are prioritized even if semantic similarity is broad.
+- **Expanded Context**: The system retrieves the top 15 candidates and reranks them to provide the LLM with the 10 most relevant context blocks.
 
-### 3. Setup API Key
+### 4. Expert Synthesis (Gemini 2.5 Flash)
+The final stage uses **Gemini 2.5 Flash** with a meticulously tuned system prompt to produce **"Natural Expert Prose."**
+- **Flowing Narrative**: Information is synthesized into coherent paragraphs, avoiding robotic bullet points or section labels.
+- **Zero-CORS Latency**: The architecture is designed for real-time streaming to the Next.js frontend on port 3000.
 
-Create `.env` file:
-```
-GEMINI_API_KEY=your_api_key_here
-```
+## 🚥 Quick Start
 
-Get your free API key: [Google AI Studio](https://makersuite.google.com/app/apikey)
+### Backend (Port 8000)
+1. `cd backend`
+2. `pip install -r requirements.txt`
+3. Configure `.env` with `GEMINI_API_KEY`, `QDRANT_URL`, and `QDRANT_API_KEY`.
+4. Run: `python -m uvicorn main:app --host 0.0.0.0 --port 8000`
 
-### 4. Run App
-```bash
-streamlit run app.py
-```
+### Frontend (Port 3000)
+1. `cd frontend`
+2. `npm install`
+3. Run: `npm run dev -- -p 3000`
 
-Open browser at `http://localhost:8501`
+## 📁 Source Code Map
 
-## 📦 Requirements
-
-Create `requirements.txt`:
-```
-streamlit
-langchain
-langchain-community
-langchain-google-genai
-langchain-text-splitters
-python-dotenv
-pypdf
-faiss-cpu
-sentence-transformers
-```
-
-## 🎯 Usage
-
-1. Upload a PDF file
-2. Ask questions about the document
-3. Get AI-generated answers
-4. Adjust settings in sidebar (temperature, chunks)
-
-## 🛠️ Tech Stack
-
-- **Streamlit** - Web interface
-- **LangChain** - LLM framework
-- **Google Gemini** - AI model
-- **FAISS** - Vector search
-- **HuggingFace** - Embeddings
-
-## 📁 Project Structure
-```
-rag-qa-assistant/
-├── app.py              # Main application
-├── requirements.txt    # Dependencies
-├── .env               # API keys (not tracked)
-├── .gitignore         # Git ignore
-└── README.md          # This file
-```
-
-## ⚙️ Configuration
-
-Customize in sidebar:
-- **Temperature**: 0.0 (focused) to 1.0 (creative)
-- **Retrieved Chunks**: 1-20 (more = more context)
-
-## 🐛 Troubleshooting
-
-**API key not found?**
-- Check `.env` file exists
-- Verify `GEMINI_API_KEY` is set
-- Restart Streamlit
-
-**Module errors?**
-```bash
-pip install --upgrade -r requirements.txt
-```
+- `backend/main.py`: FastAPI application & Core Agent logic.
+- `backend/retrieval/retriever.py`: Hybrid search & BM25 implementation.
+- `backend/ingestion/ingestion.py`: Pipeline for multi-source PDF/Text indexing.
+- `backend/retrieval/planner.py`: The Keyword-based Agentic Router.
+- `frontend/app/page.tsx`: Premium Chat UI with streaming support.
 
 ## 📝 License
-
 MIT License
-
-## 👤 Author
-
-Your Name - [GitHub](https://github.com/yourusername)
-
-## 🤝 Contributing
-
-Contributions welcome! Please open an issue or PR.
-
----
-
-⭐ Star this repo if you find it helpful!
-```
-
-And here's the `.gitignore`:
-```
-# Environment
-.env
-*.env
-
-# Virtual environment
-rag-env/
-venv/
-env/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Temporary files
-temp_upload.pdf
-*.pdf
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store

@@ -36,14 +36,12 @@ Question: {question}
     return question
 
 
-async def retrieve(collection: str, query: str) -> list[tuple[str, float]]:
-    """Retrieve documents from a single Qdrant collection."""
+async def retrieve(collection: str, query_vector: list[float]) -> list[tuple[str, float]]:
+    """Retrieve documents from a single Qdrant collection using a pre-computed vector."""
     try:
-        vector = embeddings.embed_query(query)
-
         results = qdrant.query_points(
             collection_name=collection,
-            query=vector,
+            query=query_vector,
             limit=dynamic_k(collection),
         )
 
@@ -54,23 +52,24 @@ async def retrieve(collection: str, query: str) -> list[tuple[str, float]]:
             if "text" in point.payload
         ]
     except Exception:
-        # Collection might be empty or not exist
         return []
 
 
 async def hybrid_retrieve(query: str, selected: list[str]) -> list[str]:
     """
-    Hybrid retrieval: vector search across multiple collections,
-    then BM25 reranking on the merged results.
+    Optimized Hybrid retrieval: single embedding call, parallel search, and BM25 reranking.
     """
     # Step 1: Rewrite query for better retrieval
     rewritten = rewrite_query(query)
 
-    # Step 2: Parallel retrieval from selected collections
-    tasks = [retrieve(c, rewritten) for c in selected]
+    # Step 2: Pre-compute embedding once for all collections (Huge Speedup)
+    query_vector = embeddings.embed_query(rewritten)
+
+    # Step 3: Parallel retrieval from selected collections using the SAME vector
+    tasks = [retrieve(c, query_vector) for c in selected]
     results = await asyncio.gather(*tasks)
 
-    # Step 3: Merge and sort by vector score
+    # Step 4: Merge and sort
     merged = []
     for r in results:
         merged.extend(r)
@@ -79,18 +78,21 @@ async def hybrid_retrieve(query: str, selected: list[str]) -> list[str]:
         return []
 
     merged.sort(key=lambda x: x[1], reverse=True)
-    top_vector_docs = [doc for doc, score in merged[:8]]
+    
+    # Increased to 15 for deep context synthesis
+    top_vector_docs = [doc for doc, score in merged[:15]]
 
     if len(top_vector_docs) < 2:
         return top_vector_docs
 
-    # Step 4: BM25 reranking
+    # Step 5: BM25 reranking for better relevance
     try:
         tokenized_docs = [doc.split() for doc in top_vector_docs]
         bm25 = BM25Okapi(tokenized_docs)
         scores = bm25.get_scores(rewritten.split())
         combined = list(zip(top_vector_docs, scores))
         combined.sort(key=lambda x: x[1], reverse=True)
-        return [doc for doc, score in combined[:5]]
+        # Finalized to top 10 for professional summaries
+        return [doc for doc, score in combined[:10]]
     except Exception:
-        return top_vector_docs[:5]
+        return top_vector_docs[:10]

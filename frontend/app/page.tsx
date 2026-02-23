@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const API_BASE = "http://localhost:8001";
+const API_BASE = "http://localhost:8000";
 
 interface Message {
   id: string;
@@ -131,7 +131,7 @@ export default function Home() {
           m.id === assistantMessage.id
             ? {
               ...m,
-              content: `Error: ${error instanceof Error ? error.message : "Failed to connect to the RAG backend. Make sure the server is running on port 8001."}`,
+              content: `Error: ${error instanceof Error ? error.message : "Failed to connect to the RAG backend. Make sure the server is running on port 8000."}`,
             }
             : m
         )
@@ -308,8 +308,8 @@ export default function Home() {
                   </span>
                   <span
                     className={`text-xs font-mono ${col.points_count > 0
-                        ? "text-[var(--color-success)]"
-                        : "text-[var(--color-text-dim)]"
+                      ? "text-[var(--color-success)]"
+                      : "text-[var(--color-text-dim)]"
                       }`}
                   >
                     {col.points_count}
@@ -404,8 +404,8 @@ export default function Home() {
                   )}
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === "user"
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "bg-[var(--color-surface)] border border-[var(--color-border)]"
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-surface)] border border-[var(--color-border)]"
                       }`}
                   >
                     {msg.content || (

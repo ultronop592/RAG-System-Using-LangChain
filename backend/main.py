@@ -78,17 +78,12 @@ async def health():
 @app.get("/collections")
 async def list_collections():
     """List all Qdrant collections with their point counts."""
+    from core.qdrant_client import qdrant
     try:
-        collections = []
-        for c in ensure_collections():
-            try:
-                info = qdrant_info(c)
-                collections.append(info)
-            except Exception:
-                collections.append({"name": c, "points_count": 0})
+        # Ensure base collections exist
+        ensure_collections()
         
-        # Also get current collections from Qdrant
-        from core.qdrant_client import qdrant
+        # Get all collections from Qdrant
         result = qdrant.get_collections()
         collection_list = []
         for col in result.collections:
@@ -157,7 +152,7 @@ async def chat(request: ChatRequest):
     if question in response_cache:
         return {"answer": response_cache[question], "cached": True}
 
-    # Plan which collections to search
+    # Plan which collections to search (Fast Keyword Routing)
     selected = planner(question)
 
     # Hybrid retrieval (vector search + BM25 reranking)
@@ -169,18 +164,22 @@ async def chat(request: ChatRequest):
     # Get chat memory
     memory = chat_memory.format_history(session_id)
 
-    # Build prompt
-    prompt = f"""You are a multi-resource AI assistant. Answer the user's question based on the provided context.
-If the context does not contain relevant information, say so honestly.
-Be concise, accurate, and helpful.
+    # Natural Expert Persona (Strict Prose Instructions)
+    prompt = f"""Use the following system instructions to answer the user query:
+1. Answer questions in clear, concise, flowing prose — like a knowledgeable expert speaking naturally.
+2. Never use markdown headers (##, ###), bullet points, bold text, or numbered lists unless the user explicitly asks for them.
+3. Never include executive summaries, technical deep-dives, or section labels.
+4. Do not expose internal source labels, figure references like [Figure 1], or citation numbers like [10] to the user.
+5. Synthesize retrieved information into a single coherent paragraph or two. Do not dump document structure.
+6. Keep answers concise and direct. Avoid redundancy and over-explanation.
 
 Previous Conversation:
 {memory}
 
-Context from knowledge sources ({', '.join(selected)}):
+Retrieved Information Context:
 {context}
 
-Question:
+User Question:
 {question}
 """
 
